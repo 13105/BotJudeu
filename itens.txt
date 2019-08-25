@@ -1,0 +1,2 @@
+C:Strawberry  <= 3,000
+V:Strawberry  >= 3,000
