@@ -51,11 +51,11 @@ class RagnaChecker(object):
             comparadores = self.getComparadores(l)
 
             #valor após o comparador
-            cmp_val = 0
+            cmp_val = -1
             item_nome = l
 
             # 0 operadores
-            if comparadores == 0:
+            if comparadores == -1:
                 item_nome = item_nome.title()
 
             elif comparadores:
@@ -173,19 +173,26 @@ class RagnaChecker(object):
                     # > ou <
 
             #Se chegou até o ultimo caractere da string é porque não existem operadores nessa string
-            if(i_x == ultimo_idx): return 0
+            #logo operador será <= por padrão
+            if(i_x == ultimo_idx): return -1
 
 
-    @staticmethod
-    def compararLojas(l_velha, l_nova):
+
+    def compararLojas(self, l_velha, l_nova):
         #compara duas listas, primeiro a velha seguido pela nova;
-        #se a
+
+
         arr_p_nova = []
         arr_p_velha = []
 
         #cria lista contendo comparador e valor (ex: [ ['>',100 ],...  ) para cada item;
+        arr_cmp_val = list(map(
+        lambda x: [
+            x[0][3] if x[0][3] is not -1 else "<=" ,
+            x[0][4] if x[0][4] is not -1 else self.__MAX_ZENY
 
-        arr_cmp_val = list(map(lambda x: [x[0][3],str(x[0][4]) ], l_nova))
+         ], l_nova))
+
 
         #calcula o melhor preço para cada item da velha lista
         for _i, _ in enumerate(l_velha):
@@ -202,7 +209,7 @@ class RagnaChecker(object):
 
                 #MP <comparador> <comparador_valor> ?
                 #valor esta no range aceitavel ?
-                if eval(str(__[4]) + arr_cmp_val[_i][0] + arr_cmp_val[_i][1] ):
+                if eval(str(__[4]) + arr_cmp_val[_i][0] + str(arr_cmp_val[_i][1]) ):
 
                     if (mp > -1) and not (mp > __[4]):
                         continue
@@ -230,7 +237,7 @@ class RagnaChecker(object):
 
                 #MP <comparador> <comparador_valor> ?
                 #valor esta no range aceitavel ?
-                if eval(str(__[4]) + arr_cmp_val[_i][0] + arr_cmp_val[_i][1] ):
+                if eval(str(__[4]) + arr_cmp_val[_i][0] + str(arr_cmp_val[_i][1]) ):
 
                     if (mp > -1) and not (mp > __[4]):
                         continue
@@ -243,19 +250,95 @@ class RagnaChecker(object):
                 arr_p_nova.append([mp])
 
 
-
         # por fim compara as duas arrays
         for _i, _ in enumerate(arr_p_velha):
 
-            if (_[0] == -1) and (arr_p_nova[_i][0] != -1):
-                #c_ou_v = comprado ou vendido
-                c_ou_v = "comprado" if l_nova[_i][0][0] == 1 else "vendido"
-                print("{} esta sendo {} agora por {}z !".format(l_nova[_i][0][1], c_ou_v, arr_p_nova[_i][0]  ))
 
-        #print(arr_p_velha)
-        #print(arr_p_nova)
+            if (_[0] != -1) and (arr_p_nova[_i][0] != -1):
+                #verifica se o preço dos itens foi modificado
+
+                #nada mudou ?
+                if (_[0] == arr_p_nova[_i][0]):
+                    continue
+
+                #obtem informação sobre a loja
+                loja_info = self.__getLoja(arr_p_nova[_i][1][2])
+
+
+                #compra ou venda ?
+                if (l_nova[_i][0][0] != 1):
+                    c_ou_v = "venda"
+                    cor_boa = Fore.GREEN
+                else:
+                    c_ou_v = "compra"
+                    cor_boa = Fore.RED
+
+                #variavel percentual
+                vp = round( ((arr_p_nova[_i][0] - _[0]) / _[0]) * 100)
+
+
+
+                if (_[0] < arr_p_nova[_i][0]):
+
+                    print(
+                    f"{cor_boa}O preço mais barato de {c_ou_v} do item '{Style.BRIGHT}{Fore.MAGENTA}{l_nova[_i][0][1]}{cor_boa}' subiu ! \n"
+                    f"Subiu de {Style.DIM}{Fore.WHITE}{_[0]:,}z{Style.NORMAL}{cor_boa}"
+                    f" para {Style.BRIGHT}{cor_boa}{arr_p_nova[_i][0]:,}z{cor_boa} ({vp}%);\n"
+                    f"- Player:\t\t{Style.BRIGHT}{Fore.CYAN}{loja_info[0]}{cor_boa}\n"
+                    f"- Nome da loja:\t\t{Style.NORMAL}{Fore.WHITE}{arr_p_nova[_i][1][0]}{cor_boa}\n"
+                    f"- Local:\t\t{Fore.WHITE}{loja_info[1]}{cor_boa}\n"
+                    f"- Quantidade:\t\t{Fore.WHITE}{arr_p_nova[_i][1][3]}x{cor_boa}\n"
+                    f"- Preço:\t\t{Style.BRIGHT}{cor_boa}{arr_p_nova[_i][0]:,}{cor_boa}z\n")
+
+                elif (_[0] > arr_p_nova[_i][0]):
+
+
+                    print(
+                    f"{cor_boa}O preço mais barato de {c_ou_v} do item '{Style.BRIGHT}{Fore.MAGENTA}{l_nova[_i][0][1]}{cor_boa}' abaixou ! \n"
+                    f"Abaixou de {Style.DIM}{Fore.WHITE}{_[0]:,}z{Style.NORMAL}{cor_boa}"
+                    f" para {Style.BRIGHT}{cor_boa}{arr_p_nova[_i][0]:,}z{cor_boa} ({vp}%);\n"
+                    f"- Player:\t\t{Style.BRIGHT}{Fore.CYAN}{loja_info[0]}{cor_boa}\n"
+                    f"- Nome da loja:\t\t{Style.NORMAL}{Fore.WHITE}{arr_p_nova[_i][1][0]}{cor_boa}\n"
+                    f"- Local:\t\t{Fore.WHITE}{loja_info[1]}{cor_boa}\n"
+                    f"- Quantidade:\t\t{Fore.WHITE}{arr_p_nova[_i][1][3]}x{cor_boa}\n"
+                    f"- Preço:\t\t{Style.BRIGHT}{cor_boa}{arr_p_nova[_i][0]:,}{cor_boa}z\n")
+
+            elif (_[0] == -1) and (arr_p_nova[_i][0] != -1):
+                #alguem colocou o item para ser vendido
+
+                loja_info = self.__getLoja(arr_p_nova[_i][1][2])
+
+                c_ou_v = "comprando" if l_nova[_i][0][0] == 1 else "vendendo"
+
+
+                print(f"{Fore.YELLOW}O jogador {Style.BRIGHT}{Fore.CYAN}{loja_info[0]}{Style.NORMAL}{Fore.YELLOW} "
+                 f"abriu uma loja {c_ou_v} o item '{Style.BRIGHT}{Fore.MAGENTA}{l_nova[_i][0][1]}{Style.NORMAL}{Fore.YELLOW}'\n"
+                 f"- Player:\t\t{Style.BRIGHT}{Fore.CYAN}{loja_info[0]}{Style.NORMAL}{Fore.YELLOW}\n"
+                 f"- Nome da loja:\t\t{Fore.WHITE}{arr_p_nova[_i][1][0]}{Fore.YELLOW}\n"
+                 f"- Local:\t\t{Fore.WHITE}{loja_info[1]}{Fore.YELLOW}\n"
+                 f"- Quantidade:\t\t{Fore.WHITE}{arr_p_nova[_i][1][3]}x{Fore.YELLOW}\n"
+                 f"- Preço:\t\t{Style.BRIGHT}{Fore.YELLOW}{arr_p_nova[_i][0]:,}{Fore.YELLOW}z\n")
+
+                continue
+            elif (_[0] != -1) and (arr_p_nova[_i][0] == -1):
+                #alguem fechou a loja que estava aberta
+
+                c_ou_v = "comprando" if (l_nova[_i][0][0] == 1) else "vendendo"
+
+                print(f"{Fore.RED}Nenhuma loja agora está {c_ou_v}{Style.BRIGHT}{Fore.MAGENTA} {l_nova[_i][0][1]}{Style.NORMAL}{Fore.RED}.")
+
+
+            else:
+                #-1 e -1; o item não esta a venda
+                continue
+
+
+
+        print(arr_p_velha)
+        print(arr_p_nova)
         #print(l_nova)
-        sys.exit()
+
+
     def CheckerLoop(self):
 
         #primeira atualização flag;
@@ -292,10 +375,11 @@ class RagnaChecker(object):
 
 
 
-    def __init__(self, func_getLojas, arg_tempo):
+    def __init__(self, func_getLojas, func_getLojaInfo, arg_tempo):
         self.att_tempo = arg_tempo
         self.__getLojas = func_getLojas
-
+        self.__getLoja = func_getLojaInfo
+        self.__MAX_ZENY = (2 ** 31) - 1
         #lista de matrizes contendo item_nome, url, lojas[]
         self.lista_itens = []
 

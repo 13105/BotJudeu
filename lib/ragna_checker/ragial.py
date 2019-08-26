@@ -118,8 +118,9 @@ class RagialChecker(RagnaChecker):
                         #Tipo de loja; Venda = 1, Compra = 0
                         loja.append(loja_tipo)
 
-                        # Não há necessidade de filtrar coordenadas
-                        loja.append( td.div.get_text().strip())
+                        # Url da loja
+                        loja.append(td.a["href"])
+
                     else:
                          return []
 
@@ -129,6 +130,26 @@ class RagialChecker(RagnaChecker):
 
 
         return lojas
+
+    def getLoja(self, url):
+        #Deve retornar uma array no seguinte formato: [nome_do_player, localização]
+        try:
+            r = requests.get(url , headers=self.http_headers)
+            r.raise_for_status()
+
+
+        except HTTPError as http_erro:
+            print("{}Erro HTTP ao tentar obter informações de um item: {}".format(Fore.RED, http_erro))
+            return []
+
+        pagina = BeautifulSoup(r.text, "html.parser")
+
+        div_info = pagina.find("div", {"id":"vend_info"})
+        dados = div_info.find_all("dt")
+
+        return [dados[1].get_text().strip(), dados[3].input["value"]]
+
+
 
     def validarItens(self, itens, ids):
         #Recebe lista de itens e array contendo itens ja pesquisados no formado nome/id
@@ -218,20 +239,23 @@ class RagialChecker(RagnaChecker):
 
 
     def __init__(self, arg_tempo):
-        super(RagialChecker, self).__init__(self.getLojas, arg_tempo )
+        super(RagialChecker, self).__init__(self.getLojas, self.getLoja, arg_tempo )
         self.__is_digit = lambda x: x.isdigit()
+        #self.__not_len_0 = lambda x: len(x) > 0
         #Host base
         self.url_host = "http://ragial.org"
         self.itens_url_ids_arq = "ragial_ids"
         self.url_pesquisa = self.url_host + "/search/iRO-Renewal/{}"
         self.url_getLojas = self.url_host + "/live_reqo/iRO-Renewal/{}"
         self.url_item_base = self.url_host + "/item/iRO-Renewal/"
+        #self.url_shop_info = self.url_host + "/shop/iRO-Renewal/"
+
         self.http_headers = {"user-agent":"Mozilla/5.0 (Windows NT 10.0; rv:68.0) Gecko/20100101 Firefox/68.0"}
 
 #Prot. Retorna sempre array
 
 
-x = RagialChecker(1)
+x = RagialChecker(30)
 
 
 
@@ -240,12 +264,12 @@ x = RagialChecker(1)
 
 l_velha = [
     [
-         ['Erva verde1', 0, 'Pront (166,189)', 465, 600, 25],
-         ['Erva verde2', 0, 'Pront (141,47)', 68, 2000, 94]
+        # ['Erva verde1', 0, 'http://ragial.org/shop/iRO-Renewal/5906750', 465, 3000, 25]
+
     ],
 
     [
-        ['Morangos caros', 1, 'Payon (165,58)', 722, 5000, 58],
+        ['Morangos caros', 1, 'http://ragial.org/shop/iRO-Renewal/5239676', 722, 2000, 58],
         #['Morangos', 1, 'Payon (165,58)', 722, 50, 58]
     ]
 
@@ -254,26 +278,26 @@ l_velha = [
 l_nova = [
 [
 
-    [0, 'Green Herb', '_wE', '<=', 100], [
+    [0, 'Green Herb', '_wE', '<=', 10000], [
 
-        ['Ervas Nova loja', 0, 'Pront (166,189)', 465, 100, 25],
-        ['Ervas lojas2', 0, 'Pront (141,47)', 3, 1999, 94]
+        ['Ervas Nova loja', 0, 'http://ragial.org/shop/iRO-Renewal/5906750', 465, 2000, 25],
+
 
     ]
 
 ],
     [
-        [1, 'Strawberry', 'QgI', '<=', 4000], [
-            ['Morangos judaicos', 1, 'Payon (165,58)', 722, 999999, 58],
-            ['Morangos baratos', 1, 'Payon (165,58)', 722, 3000, 58]
+        [1, 'Strawberry', 'QgI', -1, -1], [
+            #['Morangos judaicos', 1, 'http://ragial.org/shop/iRO-Renewal/5906750', 722, 3000, 58]
+            #['Morangos baratos', 1, 'Payon (165,58)', 722, 3000, 58]
         #    ['caro', 1, 'Payon (165,58)', 722, 200, 58],
         #    ['loja do judeu', 1, 'Payon (165,58)', 722, 3000, 58],
         #    ['100z', 1, 'Payon (165,58)', 722, 100, 58],
         ]
     ]
 ]
-x.compararLojas(l_velha, l_nova)
-sys.exit()
+#x.compararLojas(l_velha, l_nova)
+#sys.exit()
 
 itens = x.loadItensArq("itens.txt")
 ids = x.getItensIds()
